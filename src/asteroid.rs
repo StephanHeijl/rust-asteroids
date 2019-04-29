@@ -1,7 +1,6 @@
 use sdl2::render::Canvas;
 use sdl2::video::Window;
 use sdl2::pixels::Color;
-use sdl2::rect::Point;
 use std::f32;
 use crate::character::Character;
 use rand::Rng;
@@ -33,7 +32,7 @@ impl Asteroid {
         }
     }
 
-    pub fn make_random_asteroid(&mut self) {
+    pub fn make_random_asteroid(&self) -> Vec<(f32, f32)>{
         let h = self.x;
         let k = self.y;
         let theta = self.rotation * -1.0;
@@ -44,28 +43,30 @@ impl Asteroid {
         let mut rng = rand::thread_rng();
 
         while piece < f32::consts::PI * 2.0 {
-            let mut r : f32 = rng.gen_range(0.7, 1.0);
+            let r : f32 = rng.gen_range(0.7, 1.0);
 
             let p = (
-                (h + (r * self.size) * (theta + piece).sin()).ceil(),
-                (k + (r * self.size) * (theta + piece).cos()).ceil(),
+                (h + (r * size) * (theta + piece).sin()).ceil(),
+                (k + (r * size) * (theta + piece).cos()).ceil(),
             );
             shape.push(p);
 
             piece += step_size;
         }
 
-        println!("{:?}", shape);
-
-        self.shape = shape;
+        return shape;
     }
 
     pub fn init(&mut self, x : f32, y : f32) {
         self.x = x;
         self.y = y;
 
-        self.make_random_asteroid()
+        // Set asteroid speed.
+        let mut rng = rand::thread_rng();
+        self.speed_x = rng.gen_range(-1.5, 1.5);
+        self.speed_y = rng.gen_range(-1.5, 1.5);
 
+        self.shape = self.make_random_asteroid();
     }
 }
 
@@ -90,15 +91,21 @@ impl Character for Asteroid {
         self.y = y;
     }
     fn draw_character(&self, canvas : &mut Canvas<Window>) {
-        let start = (self.x.ceil() as i32, self.y.ceil() as i32);
+        let x = self.x;
+        let y = self.y;
 
         if self.shape.len() > 0 {
             for p in 0..self.shape.len() - 1 {
                 canvas.draw_line(
-                    (self.shape[p].0 as i32, self.shape[p].1 as i32),
-                    (self.shape[p + 1].0 as i32, self.shape[p + 1].1 as i32)
+                    ((self.shape[p].0 + x) as i32, (self.shape[p].1 + y) as i32),
+                    ((self.shape[p + 1].0 + x) as i32, (self.shape[p + 1].1 + y )as i32)
                 ).expect("Could not draw line.");
             }
+            let l = self.shape.len() - 1;
+            canvas.draw_line(
+                ((self.shape[0].0 + x) as i32, (self.shape[0].1 + y) as i32),
+                ((self.shape[l].0 + x) as i32, (self.shape[l].1 + y) as i32)
+            ).expect("Could not draw line.");
         }
 
 
