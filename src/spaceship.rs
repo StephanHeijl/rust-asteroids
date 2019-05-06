@@ -3,6 +3,7 @@ use sdl2::video::Window;
 use sdl2::pixels::Color;
 use std::f32;
 use crate::character::Character;
+use crate::bullet::Bullet;
 
 
 fn is_inverse(a : f32, b : f32) -> bool {
@@ -17,7 +18,8 @@ pub struct Spaceship {
     speed_x: f32,
     speed_y: f32,
     size: f32,
-    color: Color
+    color: Color,
+    bullets: Vec<Bullet>
 }
 
 impl Spaceship {
@@ -30,7 +32,8 @@ impl Spaceship {
             speed_x: 0.0,
             speed_y: 0.0,
             size: 25.0,
-            color: Color::RGB(255, 255, 255)
+            color: Color::RGB(255, 255, 255),
+            bullets: Vec::new()
         }
     }
 
@@ -68,6 +71,31 @@ impl Spaceship {
 
     pub fn right(&mut self) {
         self.change_rotation_deg(10.0)
+    }
+
+    fn spawn_bullet(&mut self) -> Bullet {
+        let mut bullet = Bullet::new();
+        bullet.set_x(self.x);
+        bullet.set_y(self.y);
+        self.set_bullet_speed_and_rot(&mut bullet);
+        bullet
+    }
+
+    fn set_bullet_speed_and_rot(&mut self, bullet : &mut Bullet) {
+        let speed = 5.0; // Bullet speed
+        let sx = speed * self.rotation.cos();
+        let sy = speed * self.rotation.sin();
+        bullet.set_speed(sx, sy);
+        bullet.set_rotation(self.rotation);
+    }
+
+    fn clean_bullet_store(&mut self) {
+
+    }
+
+    pub fn fire(&mut self) {
+        let bullet = self.spawn_bullet();
+        self.bullets.push(bullet);
     }
 }
 
@@ -113,6 +141,11 @@ impl Character for Spaceship {
         canvas.draw_line(start, p1).expect("Could not draw line.");
         canvas.draw_line(p1, p2).expect("Could not draw line.");
         canvas.draw_line(p2, start).expect("Could not draw line.");
+
+
+        for bullet in self.bullets.iter() {
+            bullet.draw_character(canvas);
+        }
     }
 
     fn step(&mut self) {
@@ -123,5 +156,13 @@ impl Character for Spaceship {
         if self.check_out_of_stage() {
             self.wrap()
         }
+
+        for bullet in self.bullets.iter_mut() {
+            bullet.step();
+        }
+    }
+
+    fn destroy(&mut self) {
+
     }
 }

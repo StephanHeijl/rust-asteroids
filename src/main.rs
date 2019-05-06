@@ -11,10 +11,12 @@ use sdl2::pixels::Color;
 mod character;
 mod spaceship;
 mod asteroid;
+mod bullet;
 
 use character::Character;
 use spaceship::Spaceship;
 use asteroid::Asteroid;
+use bullet::Bullet;
 
 
 fn main() -> Result<(), String> {
@@ -39,15 +41,17 @@ fn main() -> Result<(), String> {
     player.set_y(240.0);
 
     let mut enemy = Asteroid::new();
-    enemy.init(100.0, 100.0);
+    enemy.init();
+    enemy.set_x(200.0);
+    enemy.set_y(200.0);
 
     let mut enemies = vec![enemy];
 
     let mut previous_ticks = 0;
     let mut tt_previous_ticks = 0;
     let mut ticks_taken;
-    let fps = 144;
-    let target_ms = 1000 / fps;
+    let update_rate = 144;
+    let target_ms = 1000 / update_rate;
     let target_tick_rate = 1000 / 60;
 
 
@@ -69,6 +73,9 @@ fn main() -> Result<(), String> {
                 }
                 Event::KeyDown {keycode: Some(Keycode::Right), .. } => {
                     player.right();
+                }
+                Event::KeyDown {keycode: Some(Keycode::Space), .. } => {
+                    player.fire();
                 }
                 _ => {}
             }

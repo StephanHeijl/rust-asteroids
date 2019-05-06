@@ -11,7 +11,7 @@ pub trait Character {
     fn get_color(&self) -> Color;
     fn set_x(&mut self, x: f32);
     fn set_y(&mut self, x: f32);
-    //fn draw(&self, canvas: &mut Canvas<Window>);
+    fn destroy(&mut self);
 
     fn draw(&self, canvas: &mut Canvas<Window>) {
         // Set draw color to character color
@@ -43,5 +43,10 @@ pub trait Character {
                self.get_y() > 480.0 + self.get_size() ||
                self.get_x() < self.get_size() * -1.0 ||
                self.get_y() < self.get_size() * -1.0;
+    }
+
+    fn intersects<T: Character>(&self, other : &T) -> bool {
+
+        false
     }
 }

@@ -35,7 +35,7 @@ impl Asteroid {
     pub fn make_random_asteroid(&self) -> Vec<(f32, f32)>{
         let h = self.x;
         let k = self.y;
-        let theta = self.rotation * -1.0;
+        let theta = self.rotation;
         let size = self.get_size();
         let step_size = 0.25;
         let mut piece = 0.0;
@@ -57,10 +57,7 @@ impl Asteroid {
         return shape;
     }
 
-    pub fn init(&mut self, x : f32, y : f32) {
-        self.x = x;
-        self.y = y;
-
+    pub fn init(&mut self) {
         // Set asteroid speed.
         let mut rng = rand::thread_rng();
         self.speed_x = rng.gen_range(-1.5, 1.5);
@@ -115,9 +112,13 @@ impl Character for Asteroid {
         // Space movement control
         self.set_x(self.x + self.speed_x);
         self.set_y(self.y + self.speed_y);
-
+        
         if self.check_out_of_stage() {
             self.wrap()
         }
+    }
+
+    fn destroy(&mut self) {
+
     }
 }
