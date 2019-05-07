@@ -5,8 +5,6 @@ use std::time::Duration;
 
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
-//use sdl2::rect::Point;
-use sdl2::pixels::Color;
 
 mod character;
 mod spaceship;
@@ -16,7 +14,7 @@ mod bullet;
 use character::Character;
 use spaceship::Spaceship;
 use asteroid::Asteroid;
-use bullet::Bullet;
+use std::collections::HashSet;
 
 
 fn main() -> Result<(), String> {
@@ -29,12 +27,9 @@ fn main() -> Result<(), String> {
     let mut canvas = window.into_canvas()
         .accelerated().build().map_err(|e| e.to_string())?;
 
-    let bg_color = sdl2::pixels::Color::RGBA(0,0,0,255);
-    let white = Color::RGB(255, 255, 255);
-
     let mut timer = sdl_context.timer()?;
 
-    let mut event_pump = sdl_context.event_pump()?;
+    let mut events = sdl_context.event_pump()?;
 
     let mut player = Spaceship::new();
     player.set_x(320.0);
@@ -57,29 +52,34 @@ fn main() -> Result<(), String> {
 
     let mut running = true;
     while running {
-        for event in event_pump.poll_iter() {
+        for event in events.poll_iter() {
             match event {
                 Event::Quit {..} | Event::KeyDown {keycode: Some(Keycode::Escape), ..} => {
                     running = false;
                 },
-                Event::KeyDown {keycode: Some(Keycode::Up), .. } => {
+                Event::Quit {..} | Event::KeyDown {keycode: Some(Keycode::Up), ..} => {
                     player.up();
                 },
-                Event::KeyDown {keycode: Some(Keycode::Down), .. } => {
+                Event::Quit {..} | Event::KeyDown {keycode: Some(Keycode::Down), ..} => {
                     player.down();
-                }
-                Event::KeyDown {keycode: Some(Keycode::Left), .. } => {
-                    player.left();
-                }
-                Event::KeyDown {keycode: Some(Keycode::Right), .. } => {
-                    player.right();
-                }
-                Event::KeyDown {keycode: Some(Keycode::Space), .. } => {
-                    player.fire();
-                }
+                },
                 _ => {}
             }
         }
+
+        let pressed_keys : HashSet<Keycode> = events.keyboard_state().pressed_scancodes().filter_map(Keycode::from_scancode).collect();
+
+        // Rotating and firing need to happen simultaneously.
+        if pressed_keys.contains(&Keycode::Left) {
+            player.left();
+        }
+        if pressed_keys.contains(&Keycode::Right) {
+            player.right();
+        }
+        if pressed_keys.contains(&Keycode::Space) {
+            player.fire();
+        }
+
 
         if (timer.ticks() - tt_previous_ticks) > target_tick_rate {
             canvas.clear();

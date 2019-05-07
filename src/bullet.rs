@@ -15,7 +15,7 @@ pub struct Bullet {
     size: f32,
     color: Color,
     shape: Vec<(f32, f32)>,
-    is_destroyed: bool,
+    pub is_destroyed: bool,
 }
 
 
@@ -33,13 +33,6 @@ impl Bullet {
             shape: vec![],
             is_destroyed: false,
         }
-    }
-
-    pub fn init(&mut self) {
-        // Set asteroid speed.
-        let mut rng = rand::thread_rng();
-        self.speed_x = rng.gen_range(-1.5, 1.5);
-        self.speed_y = rng.gen_range(-1.5, 1.5);
     }
 
     pub fn set_speed(&mut self, sx : f32, sy : f32) {
@@ -73,18 +66,16 @@ impl Character for Bullet {
         self.y = y;
     }
     fn draw_character(&self, canvas : &mut Canvas<Window>) {
-        let x = self.x;
-        let y = self.y;
-
         let h = self.x;
         let k = self.y;
         let theta = self.rotation * -1.0;
-        let start = (self.x.ceil() as i32, self.y.ceil() as i32);
+
         let r = self.get_size();
+        let ninety_deg = f32::consts::PI * 0.5;
 
         let p1 = (
-            (h + r * (theta).sin()).ceil() as i32,
-            (k + r * (theta).cos()).ceil() as i32,
+            (h + r * (theta + ninety_deg).sin()).ceil() as i32,
+            (k + r * (theta + ninety_deg).cos()).ceil() as i32,
         );
 
         let start = (self.x.ceil() as i32, self.y.ceil() as i32);

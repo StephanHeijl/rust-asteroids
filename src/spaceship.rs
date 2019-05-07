@@ -17,6 +17,7 @@ pub struct Spaceship {
     rotation: f32,
     speed_x: f32,
     speed_y: f32,
+    fire_cooldown: usize,
     size: f32,
     color: Color,
     bullets: Vec<Bullet>
@@ -31,6 +32,7 @@ impl Spaceship {
             rotation: 0.0,
             speed_x: 0.0,
             speed_y: 0.0,
+            fire_cooldown: 0,
             size: 25.0,
             color: Color::RGB(255, 255, 255),
             bullets: Vec::new()
@@ -66,11 +68,11 @@ impl Spaceship {
     }
 
     pub fn left(&mut self) {
-        self.change_rotation_deg(-10.0)
+        self.change_rotation_deg(-2.0)
     }
 
     pub fn right(&mut self) {
-        self.change_rotation_deg(10.0)
+        self.change_rotation_deg(2.0)
     }
 
     fn spawn_bullet(&mut self) -> Bullet {
@@ -82,7 +84,7 @@ impl Spaceship {
     }
 
     fn set_bullet_speed_and_rot(&mut self, bullet : &mut Bullet) {
-        let speed = 5.0; // Bullet speed
+        let speed = 8.0; // Bullet speed
         let sx = speed * self.rotation.cos();
         let sy = speed * self.rotation.sin();
         bullet.set_speed(sx, sy);
@@ -90,12 +92,27 @@ impl Spaceship {
     }
 
     fn clean_bullet_store(&mut self) {
+        let mut destroyed_bullets : Vec<usize> = vec!();
+        for (idx, bullet) in self.bullets.iter().enumerate() {
+            if bullet.is_destroyed {
+                destroyed_bullets.push(idx);
+            }
+        }
+
+        destroyed_bullets.reverse();
+        for db in destroyed_bullets.iter() {
+            self.bullets.remove(*db);
+        }
 
     }
 
     pub fn fire(&mut self) {
-        let bullet = self.spawn_bullet();
-        self.bullets.push(bullet);
+        if self.fire_cooldown == 0 {
+            let bullet = self.spawn_bullet();
+            self.bullets.push(bullet);
+            self.fire_cooldown = 10;
+        }
+        self.clean_bullet_store();
     }
 }
 
@@ -152,6 +169,9 @@ impl Character for Spaceship {
         // Space movement control
         self.set_x(self.x + self.speed_x);
         self.set_y(self.y + self.speed_y);
+        if self.fire_cooldown > 0 {
+            self.fire_cooldown -= 1;
+        }
 
         if self.check_out_of_stage() {
             self.wrap()
