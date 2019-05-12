@@ -14,7 +14,9 @@ pub struct Asteroid {
     speed_y: f32,
     size: f32,
     color: Color,
-    shape: Vec<(f32, f32)>
+    shape: Vec<(f32, f32)>,
+    is_destroyed: bool,
+    pub level : usize,
 }
 
 impl Asteroid {
@@ -28,8 +30,14 @@ impl Asteroid {
             speed_y: 0.0,
             size: 25.0,
             color: Color::RGB(255, 255, 255),
-            shape: vec![]
+            shape: vec![],
+            level: 1,
+            is_destroyed: false
         }
+    }
+
+    pub fn set_size(&mut self, size : f32) {
+        self.size = size;
     }
 
     pub fn make_random_asteroid(&self) -> Vec<(f32, f32)>{
@@ -37,6 +45,7 @@ impl Asteroid {
         let k = self.y;
         let theta = self.rotation;
         let size = self.get_size();
+
         let step_size = 0.25;
         let mut piece = 0.0;
         let mut shape : Vec<(f32, f32)> = Vec::new();
@@ -60,10 +69,24 @@ impl Asteroid {
     pub fn init(&mut self) {
         // Set asteroid speed.
         let mut rng = rand::thread_rng();
-        self.speed_x = rng.gen_range(-1.5, 1.5);
-        self.speed_y = rng.gen_range(-1.5, 1.5);
+        self.speed_x = rng.gen_range(-0.5, 0.5);
+        self.speed_y = rng.gen_range(-0.5, 0.5);
 
         self.shape = self.make_random_asteroid();
+    }
+
+
+    fn distance<T: Character>(&self, other : &T) -> f32 {
+        let (x1, y1) = self.get_center();
+        let (x2, y2) = other.get_center();
+
+        // Euclidean distance
+        f32::sqrt((x1 as f32 - x2 as f32).abs() + (y1 as f32 - y2 as f32).abs())
+    }
+
+    pub fn intersects<T: Character>(&self, other : &T) -> bool {
+        let d = self.distance(other);
+        return d < (self.size * 0.3);
     }
 }
 
@@ -95,7 +118,7 @@ impl Character for Asteroid {
             for p in 0..self.shape.len() - 1 {
                 canvas.draw_line(
                     ((self.shape[p].0 + x) as i32, (self.shape[p].1 + y) as i32),
-                    ((self.shape[p + 1].0 + x) as i32, (self.shape[p + 1].1 + y )as i32)
+                    ((self.shape[p + 1].0 + x) as i32, (self.shape[p + 1].1 + y) as i32)
                 ).expect("Could not draw line.");
             }
             let l = self.shape.len() - 1;
@@ -104,8 +127,10 @@ impl Character for Asteroid {
                 ((self.shape[l].0 + x) as i32, (self.shape[l].1 + y) as i32)
             ).expect("Could not draw line.");
         }
+    }
 
-
+    fn get_center(&self) -> (i32, i32) {
+        (self.x as i32, self.y as i32)
     }
 
     fn step(&mut self) {
@@ -119,6 +144,7 @@ impl Character for Asteroid {
     }
 
     fn destroy(&mut self) {
+        self.is_destroyed = true;
 
     }
 }

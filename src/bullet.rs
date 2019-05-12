@@ -3,7 +3,7 @@ use sdl2::video::Window;
 use sdl2::pixels::Color;
 use std::f32;
 use crate::character::Character;
-use rand::Rng;
+//use rand::Rng;
 
 #[derive(Debug)]
 pub struct Bullet {
@@ -95,5 +95,14 @@ impl Character for Bullet {
 
     fn destroy(&mut self) {
         self.is_destroyed = true;
+    }
+
+    fn get_center(&self) -> (i32, i32) {
+        let theta = self.rotation * -1.0;
+        let r = self.get_size();
+        (
+            (self.x + (r / 2.0) * (theta).sin()).ceil() as i32,
+            (self.y + (r / 2.0) * (theta).cos()).ceil() as i32,
+        )
     }
 }

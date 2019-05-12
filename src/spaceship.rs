@@ -20,7 +20,8 @@ pub struct Spaceship {
     fire_cooldown: usize,
     size: f32,
     color: Color,
-    bullets: Vec<Bullet>
+    pub bullets: Vec<Bullet>,
+    pub  is_destroyed: bool
 }
 
 impl Spaceship {
@@ -35,7 +36,8 @@ impl Spaceship {
             fire_cooldown: 0,
             size: 25.0,
             color: Color::RGB(255, 255, 255),
-            bullets: Vec::new()
+            bullets: Vec::new(),
+            is_destroyed: false
         }
     }
 
@@ -91,17 +93,16 @@ impl Spaceship {
         bullet.set_rotation(self.rotation);
     }
 
-    fn clean_bullet_store(&mut self) {
+    pub fn clean_bullet_store(&mut self) {
         let mut destroyed_bullets : Vec<usize> = vec!();
         for (idx, bullet) in self.bullets.iter().enumerate() {
             if bullet.is_destroyed {
-                destroyed_bullets.push(idx);
+                destroyed_bullets.insert(0, idx);
             }
         }
 
-        destroyed_bullets.reverse();
-        for db in destroyed_bullets.iter() {
-            self.bullets.remove(*db);
+        for db in destroyed_bullets {
+            self.bullets.remove(db);
         }
 
     }
@@ -129,6 +130,14 @@ impl Character for Spaceship {
     }
     fn get_color(&self) -> Color {
         return self.color;
+    }
+    fn get_center(&self) -> (i32, i32) {
+        let theta = self.rotation * -1.0;
+        let r = self.get_size();
+        (
+            (self.x + (r / 2.0) * (theta).sin()).ceil() as i32,
+            (self.y + (r / 2.0) * (theta).cos()).ceil() as i32,
+        )
     }
     fn set_x(&mut self, x: f32) {
         self.x = x;
@@ -160,6 +169,8 @@ impl Character for Spaceship {
         canvas.draw_line(p2, start).expect("Could not draw line.");
 
 
+        canvas.draw_line(self.get_center(), self.get_center()).expect("Could not draw center");
+
         for bullet in self.bullets.iter() {
             bullet.draw_character(canvas);
         }
@@ -180,9 +191,14 @@ impl Character for Spaceship {
         for bullet in self.bullets.iter_mut() {
             bullet.step();
         }
+
+        if self.is_destroyed && self.size > 0.0 {
+            self.size -= 1.0;
+            self.rotation += 5.0;
+        }
     }
 
     fn destroy(&mut self) {
-
+        self.is_destroyed = true;
     }
 }

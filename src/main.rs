@@ -3,6 +3,7 @@ extern crate rand;
 
 use std::time::Duration;
 
+use sdl2::EventPump;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 
@@ -16,6 +17,54 @@ use spaceship::Spaceship;
 use asteroid::Asteroid;
 use std::collections::HashSet;
 
+
+fn create_enemy_at(x : f32, y : f32, level: usize) -> Asteroid {
+    let mut enemy = Asteroid::new();
+    enemy.level = level;
+    let sizes = [
+        15.0,
+        20.0,
+        30.0,
+        50.0
+    ];
+    enemy.set_size(sizes[level]);
+    enemy.init();
+    enemy.set_x(x);
+    enemy.set_y(y);
+    enemy
+}
+
+fn handle_inputs(events : &mut EventPump, player : &mut Spaceship) -> bool {
+    for event in events.poll_iter() {
+        match event {
+            Event::Quit {..} | Event::KeyDown {keycode: Some(Keycode::Escape), ..} => {
+                return false;
+            },
+            Event::KeyDown {keycode: Some(Keycode::Up), ..} => {
+                player.up();
+            },
+            Event::KeyDown {keycode: Some(Keycode::Down), ..} => {
+                player.down();
+            },
+            _ => {}
+        }
+    }
+
+    let pressed_keys : HashSet<Keycode> = events.keyboard_state().pressed_scancodes().filter_map(Keycode::from_scancode).collect();
+
+    // Rotating and firing need to happen simultaneously.
+    if pressed_keys.contains(&Keycode::Left) {
+        player.left();
+    }
+    if pressed_keys.contains(&Keycode::Right) {
+        player.right();
+    }
+    if pressed_keys.contains(&Keycode::Space) {
+        player.fire();
+    }
+
+    return true;
+}
 
 fn main() -> Result<(), String> {
     let sdl_context = sdl2::init()?;
@@ -35,12 +84,7 @@ fn main() -> Result<(), String> {
     player.set_x(320.0);
     player.set_y(240.0);
 
-    let mut enemy = Asteroid::new();
-    enemy.init();
-    enemy.set_x(200.0);
-    enemy.set_y(200.0);
-
-    let mut enemies = vec![enemy];
+    let mut enemies = vec![create_enemy_at(200.0, 400.0, 3)];
 
     let mut previous_ticks = 0;
     let mut tt_previous_ticks = 0;
@@ -52,34 +96,11 @@ fn main() -> Result<(), String> {
 
     let mut running = true;
     while running {
-        for event in events.poll_iter() {
-            match event {
-                Event::Quit {..} | Event::KeyDown {keycode: Some(Keycode::Escape), ..} => {
-                    running = false;
-                },
-                Event::Quit {..} | Event::KeyDown {keycode: Some(Keycode::Up), ..} => {
-                    player.up();
-                },
-                Event::Quit {..} | Event::KeyDown {keycode: Some(Keycode::Down), ..} => {
-                    player.down();
-                },
-                _ => {}
-            }
+        if !player.is_destroyed {
+            running = handle_inputs(&mut events, &mut   player);
+        } else {
+            running = false;
         }
-
-        let pressed_keys : HashSet<Keycode> = events.keyboard_state().pressed_scancodes().filter_map(Keycode::from_scancode).collect();
-
-        // Rotating and firing need to happen simultaneously.
-        if pressed_keys.contains(&Keycode::Left) {
-            player.left();
-        }
-        if pressed_keys.contains(&Keycode::Right) {
-            player.right();
-        }
-        if pressed_keys.contains(&Keycode::Space) {
-            player.fire();
-        }
-
 
         if (timer.ticks() - tt_previous_ticks) > target_tick_rate {
             canvas.clear();
@@ -87,13 +108,46 @@ fn main() -> Result<(), String> {
             player.step();
             player.draw(&mut canvas);
 
-            for enemy in enemies.iter_mut() {
+            let mut new_enemies : Vec<Asteroid> = Vec::new();
+            let mut destroyed_enemies : Vec<usize> = Vec::new();
+
+            for (e, enemy) in enemies.iter_mut().enumerate() {
                 enemy.step();
                 enemy.draw(&mut canvas);
+
+                if enemy.intersects(&player) {
+                    player.destroy();
+                }
+
+                for bullet in player.bullets.iter_mut() {
+                    if enemy.intersects(bullet) {
+                        if enemy.level > 1 {
+                            for _i in 0..4 {
+                                let new_enemy = create_enemy_at(
+                                    enemy.get_x(), enemy.get_y(), enemy.level - 1
+                                );
+                                new_enemies.push(new_enemy);
+                            }
+                        }
+                        enemy.destroy();
+                        // Insert at position 0 to automatically reverse the list.
+                        destroyed_enemies.insert(0, e);
+                        bullet.destroy();
+                    }
+                }
+            }
+
+            player.clean_bullet_store();
+
+            for new_enemy in new_enemies {
+                enemies.push(new_enemy);
+            }
+            for destroyed_enemy in destroyed_enemies {
+                enemies.remove(destroyed_enemy);
             }
 
             canvas.present();
-            tt_previous_ticks = timer.ticks()
+            tt_previous_ticks = timer.ticks();
         }
 
         ticks_taken = timer.ticks() - previous_ticks;
